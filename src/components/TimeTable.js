@@ -1,22 +1,33 @@
 import TimeSlot from './TimeSlot';
 
-const TimeTable = (props) => {
-  const { slots, onMouseDown, onMouseUp, onMouseMove } = props;
+const shortDayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const hours = Array.from({ length: 24 }, (_, index) => (index < 10 ? `0${index}` : index));
+
+const TimeTable = ({ slots, onMouseDown, onMouseUp, onMouseMove }) => {
   return (
-    <div className="slot-table">
+    <div className="time-table">
+      <div className="slot-table__hour-heading">
+        <span className="slot-table__empty-title"></span>
+        {hours.map((hour, index) => (
+          <span key={index} className="slot-table__hour-title">
+            {hour}
+          </span>
+        ))}
+      </div>
       {slots.map((slot, i) => (
-        <div key={i} className="slot-table-row">
-          {slot.map((s) => (
-            <TimeSlot
-              day={s.day}
-              hour={s.hour}
-              isActive={s.isActive}
-              onMouseDown={onMouseDown}
-              onMouseUp={onMouseUp}
-              onMouseMove={onMouseMove}
-              key={`${s.day}/${s.hour}`}
-            />
-          ))}
+        <div className="slot-table__day-wrapper" key={i}>
+          <span className="slot-table__day-title">{shortDayNames[i]}</span>
+          <div className="slot-table__day">
+            {slot.map((s) => (
+              <TimeSlot
+                {...s}
+                onMouseDown={onMouseDown}
+                onMouseUp={onMouseUp}
+                onMouseMove={onMouseMove}
+                key={`${s.day}/${s.hour}`}
+              />
+            ))}
+          </div>
         </div>
       ))}
     </div>

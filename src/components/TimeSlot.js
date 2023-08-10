@@ -1,15 +1,13 @@
-const TimeSlot = (props) => {
-  const { day, hour, isActive, onMouseDown, onMouseUp, onMouseMove } = props;
-  const slotClassName = `slot-item ${isActive ? 'active' : ''}`;
+const TimeSlot = ({ day, hour, isActive, onMouseDown, onMouseUp, onMouseMove }) => {
+  const slotClassName = `time-slot ${isActive ? 'time-slot--active' : ''}`;
+
   return (
     <span
       className={slotClassName}
-      onMouseDown={() => onMouseDown({ day: day, hour: hour })}
-      onMouseMove={() => onMouseMove({ day: day, hour: hour })}
-      onMouseUp={() => onMouseUp({ day: day, hour: hour })}
-    >
-      {/*{day}, {hour}*/}
-    </span>
+      onMouseDown={() => onMouseDown({ day, hour })}
+      onMouseMove={() => onMouseMove({ day, hour })}
+      onMouseUp={() => onMouseUp({ day, hour })}
+    ></span>
   );
 };
 
