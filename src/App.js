@@ -16,42 +16,40 @@ const slots = Array.from({ length: weekDays }, (_, day) =>
 function App() {
   const [slotData, setSlotData] = useState(slots);
   const [isSelectingSlots, setIsSelectingSlots] = useState(false);
-  const [clickedSlotCoordinates, setClickedSlotCoordinates] = useState(null);
+  const [startSlotCoordinates, setStartSlotCoordinates] = useState(null);
+  const [currentSlotCoordinates, setCurrentSlotCoordinates] = useState(null);
   const handleMouseDown = (slotCoordinates) => {
     setIsSelectingSlots(true);
-    setClickedSlotCoordinates(slotCoordinates);
+    setStartSlotCoordinates(slotCoordinates);
   };
   const handleMouseUp = (slotCoordinates) => {
     setIsSelectingSlots(false);
-    setClickedSlotCoordinates(null);
+    setStartSlotCoordinates(null);
+    setCurrentSlotCoordinates(null);
   };
   const handleMouseMove = (slotCoordinates) => {
     if (!isSelectingSlots) {
       return;
     }
 
-    const { day, hour } = slotCoordinates;
-    const startDay = Math.min(clickedSlotCoordinates.day, day);
-    const endDay = Math.max(clickedSlotCoordinates.day, day);
-    const startHour = Math.min(clickedSlotCoordinates.hour, hour);
-    const endHour = Math.max(clickedSlotCoordinates.hour, hour);
+    setCurrentSlotCoordinates(slotCoordinates);
 
-    const updatedSlotData = slotData.map((daySlots, dayIndex) =>
-      daySlots.map((slot, hourIndex) => {
-        const isInsideSelectedArea =
-          dayIndex + 1 >= startDay &&
-          dayIndex + 1 <= endDay &&
-          hourIndex + 1 >= startHour &&
-          hourIndex + 1 <= endHour;
+    // Calculate the range of days and hours
+    const startDay = Math.min(startSlotCoordinates.day, slotCoordinates.day);
+    const endDay = Math.max(startSlotCoordinates.day, slotCoordinates.day);
+    const startHour = Math.min(startSlotCoordinates.hour, slotCoordinates.hour);
+    const endHour = Math.max(startSlotCoordinates.hour, slotCoordinates.hour);
 
-        if (isInsideSelectedArea) {
-          return {
-            ...slot,
-            isActive: !clickedSlotCoordinates.isActive, // Toggle based on the clicked slot's isActive state
-          };
-        }
+    // Update the isActive state based on the range
+    const updatedSlotData = slotData.map((daySlots) =>
+      daySlots.map((slot) => {
+        const withinDayRange = slot.day >= startDay && slot.day <= endDay;
+        const withinHourRange = slot.hour >= startHour && slot.hour <= endHour;
 
-        return slot;
+        return {
+          ...slot,
+          isActive: withinDayRange && withinHourRange,
+        };
       })
     );
 
