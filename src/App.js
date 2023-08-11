@@ -46,33 +46,7 @@ function App() {
     setIsSelectingSlots(false);
     setStartSlotCoordinates(null);
     setCurrentSlotCoordinates(null);
-
-    // Create a new Set to store the updated active slots
-    const newActiveSlots = new Set(activeSlots);
-
-    // Calculate the range of days and hours for the selection
-    const startDay = Math.min(startSlotCoordinates.day, currentSlotCoordinates.day);
-    const endDay = Math.max(startSlotCoordinates.day, currentSlotCoordinates.day);
-    const startHour = Math.min(startSlotCoordinates.hour, currentSlotCoordinates.hour);
-    const endHour = Math.max(startSlotCoordinates.hour, currentSlotCoordinates.hour);
-
-    // Add or remove slots based on the selection
-    for (let day = startDay; day <= endDay; day++) {
-      for (let hour = startHour; hour <= endHour; hour++) {
-        const slotKey = `${day}-${hour}`;
-
-        if (isStartingFromSelected) {
-          // Remove the slot if it's active
-          newActiveSlots.delete(slotKey);
-        } else {
-          // Add the slot if it's not active
-          newActiveSlots.add(slotKey);
-        }
-      }
-    }
-
-    // Update the active slots state with the new Set
-    setActiveSlots(newActiveSlots);
+    setIsStartingFromSelected(false); // Reset the starting from selected state
   };
 
   // Function to handle mouse move event during selection
@@ -83,20 +57,41 @@ function App() {
 
     setCurrentSlotCoordinates(slotCoordinates);
 
-    // Update the slot data with the updated active status for each slot
+    const newActiveSlots = new Set(activeSlots);
+
+    const [startDay, endDay] = [Math.min, Math.max].map((fn) =>
+      fn(startSlotCoordinates.day, currentSlotCoordinates.day)
+    );
+    const [startHour, endHour] = [Math.min, Math.max].map((fn) =>
+      fn(startSlotCoordinates.hour, currentSlotCoordinates.hour)
+    );
+
+    for (let day = 1; day <= weekDays; day++) {
+      for (let hour = 1; hour <= hoursInDay; hour++) {
+        const slotKey = `${day}-${hour}`;
+
+        if (day >= startDay && day <= endDay && hour >= startHour && hour <= endHour) {
+          if (isStartingFromSelected) {
+            // Remove the slot if it's active
+            newActiveSlots.delete(slotKey);
+          } else {
+            // Add the slot if it's not active
+            newActiveSlots.add(slotKey);
+          }
+        }
+      }
+    }
+
+    setActiveSlots(newActiveSlots);
+
     setSlotData((prevSlotData) =>
       prevSlotData.map((daySlots, dayIndex) =>
-        daySlots.map((slot, hourIndex) => {
-          const isActive =
-            (isStartingFromSelected && slot.isActive) || // If starting from selected, make active slots inactive
-            activeSlots.has(`${dayIndex + 1}-${hourIndex + 1}`) ||
-            (dayIndex + 1 === slotCoordinates.day && hourIndex + 1 === slotCoordinates.hour); // Add currently hovered slot
-
-          return {
-            ...slot,
-            isActive,
-          };
-        })
+        daySlots.map((slot, hourIndex) => ({
+          ...slot,
+          isActive:
+            (isStartingFromSelected && slot.isActive) ||
+            newActiveSlots.has(`${dayIndex + 1}-${hourIndex + 1}`),
+        }))
       )
     );
   };
