@@ -1,7 +1,7 @@
 import React from 'react';
 import TimeSlot from './TimeSlot';
 
-const shortDayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const shortDayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const hours = Array.from({ length: 24 }, (_, index) => (index < 10 ? `0${index}` : index));
 
 const TimeTable = ({ slots, onMouseDown, onMouseUp, onMouseMove, activeSlots }) => {
