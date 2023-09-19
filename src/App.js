@@ -1,6 +1,6 @@
 import './App.css';
 import TimeTable from './components/TimeTable';
-import { useState } from 'react';
+import { useCallback, useReducer, useState } from 'react';
 
 // Constants for the number of days in a week and hours in a day
 const weekDays = 7;
@@ -16,85 +16,109 @@ const generateInitialSlotData = () =>
     }))
   );
 
+// Reducer to manage slot coordinates state
+const slotCoordinatesReducer = (state, action) => {
+  switch (action.type) {
+    case 'SET_START_COORDINATES':
+      return { ...state, startSlotCoordinates: action.payload };
+    case 'SET_CURRENT_COORDINATES':
+      return { ...state, currentSlotCoordinates: action.payload };
+    default:
+      return state;
+  }
+};
+
 function App() {
+  // State management for slot coordinates
+  const [slotCoordinates, dispatchSlotCoordinates] = useReducer(slotCoordinatesReducer, {
+    startSlotCoordinates: null,
+    currentSlotCoordinates: null,
+  });
+  const { startSlotCoordinates, currentSlotCoordinates } = slotCoordinates;
+
   // State variables to manage slot selection and active slots
-  // Stores slot data
   const [slotData, setSlotData] = useState(generateInitialSlotData);
-  // Tracks if user is selecting slots
   const [isSelectingSlots, setIsSelectingSlots] = useState(false);
-  // Starting coordinates of selection
-  const [startSlotCoordinates, setStartSlotCoordinates] = useState(null);
-  // Current coordinates of selection
-  const [currentSlotCoordinates, setCurrentSlotCoordinates] = useState(null);
-  // Stores if selection starts from active slot
   const [isStartingFromSelected, setIsStartingFromSelected] = useState(false);
-  // Stores active slots
   const [activeSlots, setActiveSlots] = useState(new Set());
 
   // Function to handle mouse down event on a slot
-  const handleMouseDown = (slotCoordinates) => {
-    setIsSelectingSlots(true);
-    setStartSlotCoordinates(slotCoordinates);
-    setCurrentSlotCoordinates(slotCoordinates);
+  const handleMouseDown = useCallback(
+    (slotCoordinates) => {
+      setIsSelectingSlots(true);
+      dispatchSlotCoordinates({ type: 'SET_START_COORDINATES', payload: slotCoordinates });
+      dispatchSlotCoordinates({ type: 'SET_CURRENT_COORDINATES', payload: slotCoordinates });
 
-    // Check if the clicked slot is already active
-    setIsStartingFromSelected(activeSlots.has(`${slotCoordinates.day}-${slotCoordinates.hour}`));
-  };
+      // Check if the clicked slot is already active
+      setIsStartingFromSelected(activeSlots.has(`${slotCoordinates.day}-${slotCoordinates.hour}`));
+    },
+    [activeSlots]
+  );
 
   // Function to handle mouse up event
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setIsSelectingSlots(false);
-    setStartSlotCoordinates(null);
-    setCurrentSlotCoordinates(null);
+    dispatchSlotCoordinates({ type: 'SET_START_COORDINATES', payload: null });
+    dispatchSlotCoordinates({ type: 'SET_CURRENT_COORDINATES', payload: null });
+
     setIsStartingFromSelected(false); // Reset the starting from selected state
-  };
+  }, []);
 
   // Function to handle mouse move event during selection
-  const handleMouseMove = (slotCoordinates) => {
-    if (!isSelectingSlots) {
-      return;
-    }
+  const handleMouseMove = useCallback(
+    (slotCoordinates) => {
+      if (!isSelectingSlots) {
+        return;
+      }
 
-    setCurrentSlotCoordinates(slotCoordinates);
+      dispatchSlotCoordinates({ type: 'SET_CURRENT_COORDINATES', payload: slotCoordinates });
 
-    const newActiveSlots = new Set(activeSlots);
+      const newActiveSlots = new Set(activeSlots);
 
-    const [startDay, endDay] = [Math.min, Math.max].map((fn) =>
-      fn(startSlotCoordinates.day, currentSlotCoordinates.day)
-    );
-    const [startHour, endHour] = [Math.min, Math.max].map((fn) =>
-      fn(startSlotCoordinates.hour, currentSlotCoordinates.hour)
-    );
+      const [startDay, endDay] = [Math.min, Math.max].map((fn) =>
+        fn(startSlotCoordinates.day, currentSlotCoordinates.day)
+      );
+      const [startHour, endHour] = [Math.min, Math.max].map((fn) =>
+        fn(startSlotCoordinates.hour, currentSlotCoordinates.hour)
+      );
 
-    for (let day = 1; day <= weekDays; day++) {
-      for (let hour = 1; hour <= hoursInDay; hour++) {
-        const slotKey = `${day}-${hour}`;
-
-        if (day >= startDay && day <= endDay && hour >= startHour && hour <= endHour) {
-          if (isStartingFromSelected) {
-            // Remove the slot if it's active
-            newActiveSlots.delete(slotKey);
-          } else {
-            // Add the slot if it's not active
-            newActiveSlots.add(slotKey);
+      for (let day = 1; day <= weekDays; day++) {
+        for (let hour = 1; hour <= hoursInDay; hour++) {
+          const slotKey = `${day}-${hour}`;
+          const isRange = day >= startDay && day <= endDay && hour >= startHour && hour <= endHour;
+          if (isRange) {
+            if (isStartingFromSelected) {
+              // Remove the slot if it's active
+              newActiveSlots.delete(slotKey);
+            } else {
+              // Add the slot if it's not active
+              newActiveSlots.add(slotKey);
+            }
           }
         }
       }
-    }
 
-    setActiveSlots(newActiveSlots);
+      setActiveSlots(newActiveSlots);
 
-    setSlotData((prevSlotData) =>
-      prevSlotData.map((daySlots, dayIndex) =>
-        daySlots.map((slot, hourIndex) => ({
-          ...slot,
-          isActive:
-            (isStartingFromSelected && slot.isActive) ||
-            newActiveSlots.has(`${dayIndex + 1}-${hourIndex + 1}`),
-        }))
-      )
-    );
-  };
+      setSlotData((prevSlotData) =>
+        prevSlotData.map((daySlots, dayIndex) =>
+          daySlots.map((slot, hourIndex) => ({
+            ...slot,
+            isActive:
+              (isStartingFromSelected && slot.isActive) ||
+              newActiveSlots.has(`${dayIndex + 1}-${hourIndex + 1}`),
+          }))
+        )
+      );
+    },
+    [
+      activeSlots,
+      currentSlotCoordinates,
+      isSelectingSlots,
+      isStartingFromSelected,
+      startSlotCoordinates,
+    ]
+  );
 
   return (
     <section className="container">

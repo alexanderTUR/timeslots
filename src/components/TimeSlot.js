@@ -1,4 +1,6 @@
-const TimeSlot = ({ day, hour, isActive, onMouseDown, onMouseUp, onMouseMove }) => {
+import { memo } from 'react';
+
+const TimeSlot = memo(({ day, hour, isActive, onMouseDown, onMouseUp, onMouseMove }) => {
   const slotClassName = `time-slot ${isActive ? 'time-slot--active' : ''}`;
 
   return (
@@ -9,6 +11,6 @@ const TimeSlot = ({ day, hour, isActive, onMouseDown, onMouseUp, onMouseMove }) 
       onMouseUp={() => onMouseUp({ day, hour })}
     ></span>
   );
-};
+});
 
 export default TimeSlot;
